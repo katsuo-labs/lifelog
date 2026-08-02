@@ -17,7 +17,7 @@ const store = {
 
 let workouts = store.load('workouts', []);   // {id, datetime, parts[], exercise, sets, reps, weight, memo}
 let lasers = store.load('lasers', []);       // {id, datetime, part}
-let meals = store.load('meals', []);         // {id, date, name, protein}
+let meals = store.load('meals', []);         // {id, date, time, mealType, name, protein}
 let settings = Object.assign(
   { proteinGoalMin: 100, proteinGoalMax: 110, laserMinDays: 7, laserMaxDays: 14 },
   store.load('settings', {})
@@ -25,6 +25,7 @@ let settings = Object.assign(
 
 const WORKOUT_PARTS = ['胸', '背中', '脚', '肩', '腕', '腹'];
 const LASER_PARTS = ['腕', '左足', '右足'];
+const MEAL_TYPES = ['朝食', '昼食', '夕食', '間食'];
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const $ = (sel) => document.querySelector(sel);
@@ -342,12 +343,33 @@ function renderLaser() {
 /* ========== 食事 ========== */
 $('#m-date').value = today();
 $('#m-list-date').value = today();
+buildChips($('#m-types'), MEAL_TYPES, true);
+
+// 現在時刻から分類の初期値を推定
+function defaultMealType(hour) {
+  if (hour >= 4 && hour < 11) return '朝食';
+  if (hour >= 11 && hour < 15) return '昼食';
+  if (hour >= 17 && hour < 22) return '夕食';
+  return '間食';
+}
+{
+  const now = new Date();
+  $('#m-time').value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const def = defaultMealType(now.getHours());
+  $('#m-types').querySelectorAll('.chip').forEach((c) => {
+    if (c.dataset.part === def) c.classList.add('selected');
+  });
+}
 
 $('#meal-form').addEventListener('submit', (e) => {
   e.preventDefault();
+  const mealType = selectedChips($('#m-types'))[0];
+  if (!mealType) { toast('分類を選択してください'); return; }
   meals.push({
     id: uid(),
     date: $('#m-date').value,
+    time: $('#m-time').value || '',
+    mealType,
     name: $('#m-name').value.trim(),
     protein: Number($('#m-protein').value),
   });
@@ -456,7 +478,7 @@ function renderMeal() {
     chart.appendChild(wrap);
   });
 
-  // 選択日の一覧
+  // 選択日の一覧(分類ごとにグループ化・小計付き)
   const list = $('#meal-list');
   list.innerHTML = '';
   const dayMeals = meals.filter((m) => m.date === selDate);
@@ -464,12 +486,24 @@ function renderMeal() {
     list.innerHTML = '<div class="empty">この日の記録がありません</div>';
     return;
   }
-  dayMeals.forEach((m) => {
-    list.appendChild(recordItem(m.name, `${m.protein}g`, [], () => {
-      meals = meals.filter((x) => x.id !== m.id);
-      store.save('meals', meals);
-      renderMeal();
-    }));
+  [...MEAL_TYPES, 'その他'].forEach((type) => {
+    const group = dayMeals
+      .filter((m) => (m.mealType || 'その他') === type)
+      .sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
+    if (group.length === 0) return;
+    const subtotal = round1(group.reduce((sum, m) => sum + m.protein, 0));
+    const g = document.createElement('div');
+    g.className = 'date-group';
+    g.textContent = `${type}  ${subtotal}g`;
+    list.appendChild(g);
+    group.forEach((m) => {
+      const detail = [m.time, `${m.protein}g`].filter(Boolean).join(' / ');
+      list.appendChild(recordItem(m.name, detail, [], () => {
+        meals = meals.filter((x) => x.id !== m.id);
+        store.save('meals', meals);
+        renderMeal();
+      }));
+    });
   });
 }
 

@@ -103,18 +103,26 @@ body {
   color: var(--text);
 }
 
-/* iOS Safariは日付系inputをネイティブ描画し幅指定を無視して右にはみ出すため無効化 */
+/* iOS Safariは日付系inputをネイティブ描画し幅指定を無視して右にはみ出すため無効化。
+   display:flex はiOS15+で内部値が中央寄せ・ずれ表示になる問題の定番修正 */
 input[type="date"],
+input[type="time"],
 input[type="datetime-local"] {
   -webkit-appearance: none;
   appearance: none;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
   min-width: 0;
   max-width: 100%;
   min-height: 44px;
+  text-align: left;
 }
 input::-webkit-date-and-time-value {
   text-align: left;
+  width: 100%;
+  margin: 0;
 }
 .field-row { display: flex; gap: 8px; }
 .field-row .field { flex: 1; min-width: 0; }

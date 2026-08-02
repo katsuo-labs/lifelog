@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lifelog-v2';
+const CACHE_NAME = 'lifelog-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -27,21 +27,23 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// キャッシュ優先 + バックグラウンドで更新(stale-while-revalidate)
+// ネットワーク優先 + オフライン時はキャッシュ(更新が次回起動で確実に反映される)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  if (new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetched = fetch(event.request)
-        .then((res) => {
-          if (res.ok && new URL(event.request.url).origin === self.location.origin) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || fetched;
-    })
+    fetch(event.request)
+      .then((res) => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return res;
+      })
+      .catch(() =>
+        caches.match(event.request).then(
+          (cached) => cached || (event.request.mode === 'navigate' ? caches.match('./index.html') : undefined)
+        )
+      )
   );
 });
