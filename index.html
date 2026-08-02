@@ -185,7 +185,7 @@
       </div>
 
       <div class="card">
-        <h2>自動バックアップ(GitHub Gist)</h2>
+        <h2>自動バックアップ・端末間同期(GitHub Gist)</h2>
         <p class="note" id="s-backup-status"></p>
         <label class="field">
           <span>GitHubトークン(gist権限のみ)</span>
@@ -193,13 +193,10 @@
         </label>
         <div class="btn-row">
           <button class="btn" id="s-backup-save">有効化</button>
-          <button class="btn" id="s-backup-now">今すぐ実行</button>
-        </div>
-        <div class="btn-row">
-          <button class="btn" id="s-backup-restore">Gistから復元</button>
+          <button class="btn" id="s-backup-now">今すぐ同期</button>
           <button class="btn" id="s-backup-off">解除</button>
         </div>
-        <p class="note">有効にすると、記録のたびに自動で非公開Gistへバックアップされます。トークンはこの端末内にのみ保存されます。機種変更時は新端末で同じトークンを設定し「Gistから復元」を押してください。</p>
+        <p class="note">有効にすると、記録のたびに非公開Gistへ自動保存され、アプリを開いたときに他の端末の記録と自動で統合されます。PCとスマホの両方に同じトークンを設定すれば、どちらで記録しても揃います。トークンはこの端末内にのみ保存されます。</p>
       </div>
 
       <div class="card">
