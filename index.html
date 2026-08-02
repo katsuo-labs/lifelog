@@ -185,7 +185,25 @@
       </div>
 
       <div class="card">
-        <h2>データのバックアップ</h2>
+        <h2>自動バックアップ(GitHub Gist)</h2>
+        <p class="note" id="s-backup-status"></p>
+        <label class="field">
+          <span>GitHubトークン(gist権限のみ)</span>
+          <input type="password" id="s-gist-token" placeholder="ghp_..." autocomplete="off">
+        </label>
+        <div class="btn-row">
+          <button class="btn" id="s-backup-save">有効化</button>
+          <button class="btn" id="s-backup-now">今すぐ実行</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="s-backup-restore">Gistから復元</button>
+          <button class="btn" id="s-backup-off">解除</button>
+        </div>
+        <p class="note">有効にすると、記録のたびに自動で非公開Gistへバックアップされます。トークンはこの端末内にのみ保存されます。機種変更時は新端末で同じトークンを設定し「Gistから復元」を押してください。</p>
+      </div>
+
+      <div class="card">
+        <h2>手動バックアップ</h2>
         <p class="note" id="s-data-summary"></p>
         <div class="btn-row">
           <button class="btn" id="s-export">エクスポート(JSON)</button>

@@ -50,7 +50,21 @@ git push origin main main:gh-pages
 
 ## データのバックアップ
 
-設定タブ → 「エクスポート(JSON)」でバックアップファイルを保存できます。機種変更時は新端末で「インポート」してください。
+### 自動バックアップ(GitHub Gist)
+
+設定タブで一度トークンを設定すると、記録のたびに自動で非公開Gistへバックアップされます。
+
+1. https://github.com/settings/tokens/new?scopes=gist&description=lifelog-backup を開く(gist権限だけがチェックされた状態で開きます)
+2. 有効期限を選んで「Generate token」→ 表示された `ghp_...` をコピー
+3. アプリの設定タブ → 「GitHubトークン」に貼り付けて「有効化」
+
+- トークンは端末内(localStorage)にのみ保存され、バックアップ内容には含まれません
+- 機種変更時: 新端末で同じトークンを設定 → 「Gistから復元」
+- バックアップ先は https://gist.github.com (非公開Gist `lifelog-backup.json`)
+
+### 手動バックアップ
+
+設定タブ → 「エクスポート(JSON)」でファイル保存、「インポート」で復元もできます。
 
 ## ローカルでの動作確認
 

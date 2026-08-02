@@ -12,6 +12,7 @@ const store = {
   },
   save(key, value) {
     localStorage.setItem('lifelog.' + key, JSON.stringify(value));
+    if (key !== 'settings') scheduleBackup();
   },
 };
 
@@ -19,7 +20,10 @@ let workouts = store.load('workouts', []);   // {id, datetime, parts[], exercise
 let lasers = store.load('lasers', []);       // {id, datetime, part}
 let meals = store.load('meals', []);         // {id, date, time, mealType, name, protein}
 let settings = Object.assign(
-  { proteinGoalMin: 100, proteinGoalMax: 110, laserMinDays: 7, laserMaxDays: 14 },
+  {
+    proteinGoalMin: 100, proteinGoalMax: 110, laserMinDays: 7, laserMaxDays: 14,
+    gistToken: '', gistId: '', lastBackupAt: '', lastBackupHash: '',
+  },
   store.load('settings', {})
 );
 
@@ -507,6 +511,153 @@ function renderMeal() {
   });
 }
 
+/* ========== 自動バックアップ(GitHub Gist) ========== */
+const BACKUP_FILENAME = 'lifelog-backup.json';
+let backupTimer = null;
+
+function backupData() {
+  // トークン等の秘匿情報はバックアップに含めない
+  return {
+    workouts, lasers, meals,
+    settings: {
+      proteinGoalMin: settings.proteinGoalMin,
+      proteinGoalMax: settings.proteinGoalMax,
+      laserMinDays: settings.laserMinDays,
+      laserMaxDays: settings.laserMaxDays,
+    },
+  };
+}
+
+function dataHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
+  return h.toString(36) + ':' + str.length;
+}
+
+function gistHeaders() {
+  return { Authorization: 'token ' + settings.gistToken, Accept: 'application/vnd.github+json' };
+}
+
+async function findBackupGist() {
+  const res = await fetch('https://api.github.com/gists?per_page=100', { headers: gistHeaders() });
+  if (!res.ok) return '';
+  const list = await res.json();
+  const hit = list.find((g) => g.files && g.files[BACKUP_FILENAME]);
+  return hit ? hit.id : '';
+}
+
+async function runBackup(manual) {
+  if (!settings.gistToken) {
+    if (manual) toast('先にトークンを設定してください');
+    return;
+  }
+  const data = backupData();
+  const hash = dataHash(JSON.stringify(data));
+  if (!manual && hash === settings.lastBackupHash) return;
+  const content = JSON.stringify(Object.assign({ version: 1, exportedAt: new Date().toISOString() }, data), null, 2);
+  const payload = JSON.stringify({
+    description: 'ライフログ自動バックアップ',
+    public: false,
+    files: { [BACKUP_FILENAME]: { content } },
+  });
+  try {
+    let res = null;
+    if (!settings.gistId) settings.gistId = await findBackupGist();
+    if (settings.gistId) {
+      res = await fetch('https://api.github.com/gists/' + settings.gistId, { method: 'PATCH', headers: gistHeaders(), body: payload });
+      if (res.status === 404) { settings.gistId = ''; res = null; }
+    }
+    if (!res) {
+      res = await fetch('https://api.github.com/gists', { method: 'POST', headers: gistHeaders(), body: payload });
+    }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    settings.gistId = json.id;
+    settings.lastBackupAt = new Date().toISOString();
+    settings.lastBackupHash = hash;
+    store.save('settings', settings);
+    renderBackupStatus();
+    if (manual) toast('バックアップしました');
+  } catch (err) {
+    // オフライン時などは静かに諦め、次回の記録時に再試行される
+    if (manual) toast('バックアップ失敗: ' + err.message);
+    renderBackupStatus(err.message);
+  }
+}
+
+function scheduleBackup() {
+  if (!settings.gistToken) return;
+  clearTimeout(backupTimer);
+  backupTimer = setTimeout(() => runBackup(false), 3000);
+}
+
+async function restoreFromGist() {
+  if (!settings.gistToken) { toast('先にトークンを設定してください'); return; }
+  try {
+    if (!settings.gistId) settings.gistId = await findBackupGist();
+    if (!settings.gistId) { toast('バックアップがまだありません'); return; }
+    const res = await fetch('https://api.github.com/gists/' + settings.gistId, { headers: gistHeaders() });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const gist = await res.json();
+    const file = gist.files[BACKUP_FILENAME];
+    const text = file.truncated ? await (await fetch(file.raw_url)).text() : file.content;
+    const data = JSON.parse(text);
+    if (!confirm(`Gistのバックアップで現在のデータを上書きします。\n筋トレ ${data.workouts.length}件 / 脱毛 ${data.lasers.length}件 / 食事 ${data.meals.length}件\nよろしいですか?`)) return;
+    workouts = data.workouts;
+    lasers = data.lasers;
+    meals = data.meals;
+    if (data.settings) Object.assign(settings, data.settings);
+    settings.lastBackupHash = dataHash(JSON.stringify(backupData()));
+    store.save('workouts', workouts);
+    store.save('lasers', lasers);
+    store.save('meals', meals);
+    store.save('settings', settings);
+    renderAll();
+    toast('復元しました');
+  } catch (err) {
+    toast('復元失敗: ' + err.message);
+  }
+}
+
+function renderBackupStatus(error) {
+  const el = $('#s-backup-status');
+  if (!settings.gistToken) {
+    el.textContent = '未設定: 下にトークンを入れて「有効化」を押してください';
+    return;
+  }
+  let text = '✅ 有効';
+  if (settings.lastBackupAt) text += ` / 最終バックアップ: ${fmtDatetime(settings.lastBackupAt)}`;
+  if (error) text += ` / ⚠️ ${error}`;
+  el.textContent = text;
+}
+
+$('#s-backup-save').addEventListener('click', () => {
+  const token = $('#s-gist-token').value.trim();
+  if (!token) { toast('トークンを入力してください'); return; }
+  settings.gistToken = token;
+  settings.gistId = '';
+  settings.lastBackupHash = '';
+  store.save('settings', settings);
+  $('#s-gist-token').value = '';
+  renderBackupStatus();
+  runBackup(true);
+});
+
+$('#s-backup-now').addEventListener('click', () => runBackup(true));
+$('#s-backup-restore').addEventListener('click', restoreFromGist);
+
+$('#s-backup-off').addEventListener('click', () => {
+  if (!settings.gistToken) { toast('自動バックアップは未設定です'); return; }
+  if (!confirm('自動バックアップを解除しますか?(GitHub上のバックアップ自体は残ります)')) return;
+  settings.gistToken = '';
+  settings.gistId = '';
+  settings.lastBackupAt = '';
+  settings.lastBackupHash = '';
+  store.save('settings', settings);
+  renderBackupStatus();
+  toast('解除しました');
+});
+
 /* ========== 設定 ========== */
 function renderSettings() {
   $('#s-goal-min').value = settings.proteinGoalMin;
@@ -515,6 +666,7 @@ function renderSettings() {
   $('#s-laser-max').value = settings.laserMaxDays;
   $('#s-data-summary').textContent =
     `保存件数: 筋トレ ${workouts.length}件 / 脱毛 ${lasers.length}件 / 食事 ${meals.length}件`;
+  renderBackupStatus();
 }
 
 $('#s-save-goal').addEventListener('click', () => {
@@ -540,7 +692,7 @@ $('#s-save-laser').addEventListener('click', () => {
 });
 
 $('#s-export').addEventListener('click', () => {
-  const data = { version: 1, exportedAt: new Date().toISOString(), workouts, lasers, meals, settings };
+  const data = Object.assign({ version: 1, exportedAt: new Date().toISOString() }, backupData());
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -588,6 +740,7 @@ function renderAll() {
   renderSettings();
 }
 renderAll();
+scheduleBackup(); // オフライン中の変更などバックアップ漏れがあれば起動時に追いつく
 
 // Service Worker 登録
 if ('serviceWorker' in navigator) {
