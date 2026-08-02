@@ -18,25 +18,22 @@ lifelog/
     └── apple-touch-icon.png # iOS用(180px)
 ```
 
-## GitHub Pages へのデプロイ手順
+## 公開URL
 
-1. GitHubで新しいリポジトリを作成(例: `lifelog`、Public)
-2. このフォルダをプッシュ:
+**https://katsuo-labs.github.io/lifelog/**
+
+リポジトリ: https://github.com/katsuo-labs/lifelog(Pagesは`gh-pages`ブランチから配信)
+
+## 更新のデプロイ手順
+
+ファイルを変更したら、`sw.js` の `CACHE_NAME` を上げてから、mainと`gh-pages`の両ブランチにプッシュ:
 
 ```bash
 cd "/Users/Takashi/claude code/lifelog"
-git init
 git add .
-git commit -m "ライフログPWA 初版"
-git branch -M main
-git remote add origin https://github.com/<ユーザー名>/lifelog.git
-git push -u origin main
+git commit -m "変更内容"
+git push origin main main:gh-pages
 ```
-
-3. GitHubのリポジトリページ → **Settings → Pages** → 「Build and deployment」で
-   - Source: **Deploy from a branch**
-   - Branch: **main** / **/(root)** → Save
-4. 数分後に `https://<ユーザー名>.github.io/lifelog/` で公開されます
 
 ※ manifest・Service Workerはすべて相対パスで書いてあるため、サブパス(`/lifelog/`)公開でそのまま動きます。
 
@@ -49,7 +46,7 @@ git push -u origin main
 
 ## 更新時の注意
 
-ファイルを変更して再デプロイしたら、`sw.js` の `CACHE_NAME`(`lifelog-v1`)の数字を上げてください(例: `lifelog-v2`)。古いキャッシュが破棄され、次回起動時(2回目の表示)に新しいバージョンが反映されます。
+`sw.js` の `CACHE_NAME`(`lifelog-v1`)の数字を上げ忘れると古いキャッシュが配信され続けます(例: `lifelog-v2` に変更)。新バージョンは次回起動時(2回目の表示)に反映されます。
 
 ## データのバックアップ
 
