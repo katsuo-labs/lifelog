@@ -102,6 +102,20 @@ body {
   background: var(--bg);
   color: var(--text);
 }
+
+/* iOS Safariは日付系inputをネイティブ描画し幅指定を無視して右にはみ出すため無効化 */
+input[type="date"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+}
+input::-webkit-date-and-time-value {
+  text-align: left;
+}
 .field-row { display: flex; gap: 8px; }
 .field-row .field { flex: 1; min-width: 0; }
 .field.grow { flex: 2; }
