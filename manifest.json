@@ -1,0 +1,25 @@
+{
+  "name": "ライフログ - 筋トレ・脱毛・食事記録",
+  "short_name": "ライフログ",
+  "description": "筋トレ・脱毛・食事(タンパク質)を記録する個人用ライフログ",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#0d9488",
+  "background_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

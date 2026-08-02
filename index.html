@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ライフログ</title>
+  <meta name="description" content="筋トレ・脱毛・食事(タンパク質)を記録する個人用ライフログ">
+  <meta name="theme-color" content="#0d9488">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ライフログ">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1 id="header-title">💪 筋トレ</h1>
+  </header>
+
+  <main class="app-main">
+
+    <!-- ===== 筋トレ ===== -->
+    <section id="tab-workout" class="tab-panel active">
+      <div class="card status-card" id="workout-status"></div>
+
+      <details class="card form-card" id="workout-form-details" open>
+        <summary>＋ 記録を追加</summary>
+        <form id="workout-form">
+          <label class="field">
+            <span>日時</span>
+            <input type="datetime-local" id="w-datetime" required>
+          </label>
+          <div class="field">
+            <span>部位(複数選択可)</span>
+            <div class="chip-group" id="w-parts"></div>
+          </div>
+          <label class="field">
+            <span>種目名</span>
+            <input type="text" id="w-exercise" list="w-exercise-list" placeholder="例: ベンチプレス" autocomplete="off" required>
+            <datalist id="w-exercise-list"></datalist>
+          </label>
+          <div class="field-row">
+            <label class="field">
+              <span>セット</span>
+              <input type="number" id="w-sets" min="0" inputmode="numeric" placeholder="3">
+            </label>
+            <label class="field">
+              <span>回数</span>
+              <input type="number" id="w-reps" min="0" inputmode="numeric" placeholder="10">
+            </label>
+            <label class="field">
+              <span>重量(kg)</span>
+              <input type="number" id="w-weight" min="0" step="0.5" inputmode="decimal" placeholder="20">
+            </label>
+          </div>
+          <label class="field">
+            <span>メモ</span>
+            <input type="text" id="w-memo" placeholder="任意">
+          </label>
+          <button type="submit" class="btn primary">保存</button>
+        </form>
+      </details>
+
+      <div class="card">
+        <div class="list-header">
+          <h2>記録一覧</h2>
+          <div class="filter-row">
+            <select id="w-filter-part"><option value="">全部位</option></select>
+            <select id="w-filter-month"><option value="">全期間</option></select>
+          </div>
+        </div>
+        <div id="workout-list" class="record-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== 脱毛 ===== -->
+    <section id="tab-laser" class="tab-panel">
+      <div id="laser-cards" class="laser-cards"></div>
+
+      <details class="card form-card" id="laser-form-details">
+        <summary>＋ 日付を指定して記録</summary>
+        <form id="laser-form">
+          <label class="field">
+            <span>日時</span>
+            <input type="datetime-local" id="l-datetime" required>
+          </label>
+          <div class="field">
+            <span>部位</span>
+            <div class="chip-group single" id="l-parts"></div>
+          </div>
+          <button type="submit" class="btn primary">保存</button>
+        </form>
+      </details>
+
+      <div class="card">
+        <h2>履歴</h2>
+        <div id="laser-list" class="record-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== 食事 ===== -->
+    <section id="tab-meal" class="tab-panel">
+      <div class="card status-card" id="meal-status"></div>
+
+      <details class="card form-card" open>
+        <summary>＋ 記録を追加</summary>
+        <form id="meal-form">
+          <div class="field-row">
+            <label class="field grow">
+              <span>日付</span>
+              <input type="date" id="m-date" required>
+            </label>
+          </div>
+          <label class="field">
+            <span>食品名</span>
+            <input type="text" id="m-name" list="m-name-list" placeholder="例: 鶏むね肉 100g" autocomplete="off" required>
+            <datalist id="m-name-list"></datalist>
+          </label>
+          <label class="field">
+            <span>タンパク質(g)</span>
+            <input type="number" id="m-protein" min="0" step="0.1" inputmode="decimal" placeholder="20" required>
+          </label>
+          <div class="quick-foods" id="m-quick-foods"></div>
+          <button type="submit" class="btn primary">保存</button>
+        </form>
+      </details>
+
+      <div class="card">
+        <h2>直近30日の推移</h2>
+        <div id="meal-chart" class="chart"></div>
+      </div>
+
+      <div class="card">
+        <div class="list-header">
+          <h2>記録一覧</h2>
+          <input type="date" id="m-list-date" class="compact-date">
+        </div>
+        <div id="meal-list" class="record-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== 設定 ===== -->
+    <section id="tab-settings" class="tab-panel">
+      <div class="card">
+        <h2>タンパク質目標</h2>
+        <div class="field-row">
+          <label class="field">
+            <span>下限(g/日)</span>
+            <input type="number" id="s-goal-min" min="0" inputmode="numeric">
+          </label>
+          <label class="field">
+            <span>上限(g/日)</span>
+            <input type="number" id="s-goal-max" min="0" inputmode="numeric">
+          </label>
+        </div>
+        <button class="btn primary" id="s-save-goal">目標を保存</button>
+      </div>
+
+      <div class="card">
+        <h2>脱毛サイクル</h2>
+        <div class="field-row">
+          <label class="field">
+            <span>最短間隔(日)</span>
+            <input type="number" id="s-laser-min" min="1" inputmode="numeric">
+          </label>
+          <label class="field">
+            <span>最長間隔(日)</span>
+            <input type="number" id="s-laser-max" min="1" inputmode="numeric">
+          </label>
+        </div>
+        <button class="btn primary" id="s-save-laser">サイクルを保存</button>
+      </div>
+
+      <div class="card">
+        <h2>データのバックアップ</h2>
+        <p class="note" id="s-data-summary"></p>
+        <div class="btn-row">
+          <button class="btn" id="s-export">エクスポート(JSON)</button>
+          <button class="btn" id="s-import">インポート</button>
+          <input type="file" id="s-import-file" accept="application/json,.json" hidden>
+        </div>
+        <p class="note">機種変更時はエクスポートしたファイルを新端末でインポートしてください。データはこの端末のブラウザ内にのみ保存されます。</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="workout"><span class="nav-icon">💪</span>筋トレ</button>
+    <button class="nav-btn" data-tab="laser"><span class="nav-icon">✨</span>脱毛</button>
+    <button class="nav-btn" data-tab="meal"><span class="nav-icon">🍗</span>食事</button>
+    <button class="nav-btn" data-tab="settings"><span class="nav-icon">⚙️</span>設定</button>
+  </nav>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

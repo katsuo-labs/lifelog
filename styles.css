@@ -1,0 +1,355 @@
+:root {
+  --accent: #0d9488;
+  --accent-soft: #ccfbf1;
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #0f172a;
+  --text-sub: #64748b;
+  --border: #e2e8f0;
+  --danger: #dc2626;
+  --warn-bg: #fef9c3;
+  --warn-text: #854d0e;
+  --ok-bg: #dcfce7;
+  --ok-text: #166534;
+  --over-bg: #fee2e2;
+  --over-text: #991b1b;
+  --nav-h: 60px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #2dd4bf;
+    --accent-soft: #134e4a;
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #f1f5f9;
+    --text-sub: #94a3b8;
+    --border: #334155;
+    --warn-bg: #422006;
+    --warn-text: #fde047;
+    --ok-bg: #052e16;
+    --ok-text: #86efac;
+    --over-bg: #450a0a;
+    --over-text: #fca5a5;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--accent);
+  color: #fff;
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+}
+.app-header h1 { margin: 0; font-size: 1.1rem; }
+
+.app-main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 12px calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.card h2 { margin: 0 0 10px; font-size: 0.95rem; }
+
+/* ステータスカード */
+.status-card { text-align: center; }
+.status-card .big { font-size: 1.6rem; font-weight: 700; }
+.status-card .sub { color: var(--text-sub); font-size: 0.82rem; margin-top: 4px; }
+
+/* フォーム */
+.form-card summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+  user-select: none;
+}
+.form-card form { margin-top: 12px; }
+
+.field { display: block; margin-bottom: 12px; }
+.field > span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+}
+.field input, .field select, select, input.compact-date {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px; /* iOSのズーム防止 */
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+.field-row { display: flex; gap: 8px; }
+.field-row .field { flex: 1; min-width: 0; }
+.field.grow { flex: 2; }
+
+/* チップ(部位選択) */
+.chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ボタン */
+.btn {
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.btn.primary {
+  width: 100%;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.btn-row .btn { flex: 1; }
+
+/* 一覧 */
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.list-header h2 { margin: 0; }
+.filter-row { display: flex; gap: 6px; }
+.filter-row select { width: auto; padding: 6px 8px; font-size: 0.82rem; }
+input.compact-date { width: auto; padding: 6px 8px; font-size: 0.82rem; }
+
+.record-list .date-group {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-sub);
+  margin: 12px 0 4px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2px;
+}
+.record-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.record-item:last-child { border-bottom: none; }
+.record-body { flex: 1; min-width: 0; }
+.record-title { font-weight: 600; font-size: 0.92rem; }
+.record-detail { font-size: 0.8rem; color: var(--text-sub); margin-top: 2px; overflow-wrap: anywhere; }
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-right: 4px;
+  font-weight: 600;
+}
+.del-btn {
+  border: none;
+  background: none;
+  color: var(--text-sub);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.empty { color: var(--text-sub); font-size: 0.85rem; text-align: center; padding: 12px 0; }
+
+/* 脱毛カード */
+.laser-cards { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
+.laser-card {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.laser-card.state-soon { background: var(--warn-bg); }
+.laser-card.state-soon .laser-state { color: var(--warn-text); }
+.laser-card.state-over { background: var(--over-bg); }
+.laser-card.state-over .laser-state { color: var(--over-text); }
+.laser-card.state-ok { background: var(--ok-bg); }
+.laser-card.state-ok .laser-state { color: var(--ok-text); }
+.laser-info { flex: 1; }
+.laser-part { font-weight: 700; }
+.laser-meta { font-size: 0.78rem; color: var(--text-sub); margin-top: 2px; }
+.laser-state { font-size: 0.82rem; font-weight: 700; margin-top: 2px; }
+.laser-quick {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: transparent;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 食事クイック追加 */
+.quick-foods { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.quick-foods:empty { display: none; }
+.quick-food {
+  font-size: 0.78rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* プログレスバー */
+.progress {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-top: 8px;
+}
+.progress > div {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.3s;
+}
+.progress > div.over { background: var(--danger); }
+
+/* グラフ */
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 140px;
+  position: relative;
+  padding-top: 14px;
+}
+.chart .goal-line {
+  position: absolute;
+  left: 0; right: 0;
+  border-top: 2px dashed var(--text-sub);
+  opacity: 0.6;
+}
+.chart .goal-label {
+  position: absolute;
+  right: 0;
+  transform: translateY(-110%);
+  font-size: 0.65rem;
+  color: var(--text-sub);
+}
+.chart .bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+}
+.chart .bar {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+  opacity: 0.55;
+  min-height: 1px;
+}
+.chart .bar.goal-met { opacity: 1; }
+.chart .bar-label {
+  font-size: 0.55rem;
+  color: var(--text-sub);
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+.note { font-size: 0.78rem; color: var(--text-sub); }
+
+/* 下部ナビ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+.nav-btn {
+  flex: 1;
+  height: var(--nav-h);
+  border: none;
+  background: none;
+  color: var(--text-sub);
+  font-size: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.nav-btn .nav-icon { font-size: 1.3rem; }
+.nav-btn.active { color: var(--accent); font-weight: 700; }
+
+/* トースト */
+.toast {
+  position: fixed;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text);
+  color: var(--bg);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 20;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
