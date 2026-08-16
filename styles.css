@@ -330,6 +330,20 @@ input.compact-date { width: auto; padding: 6px 8px; font-size: 0.82rem; }
 
 .note { font-size: 0.78rem; color: var(--text-sub); }
 
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.toggle-row input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+
 /* カレンダー */
 .cal-header {
   display: flex;

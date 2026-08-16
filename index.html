@@ -147,8 +147,8 @@
             <div class="chip-group single" id="m-types"></div>
           </div>
           <label class="field">
-            <span>食品名</span>
-            <input type="text" id="m-name" list="m-name-list" placeholder="例: 鶏むね肉 100g" autocomplete="off" required>
+            <span>食品名(任意)</span>
+            <input type="text" id="m-name" list="m-name-list" placeholder="例: 鶏むね肉 100g(省略可)" autocomplete="off">
             <datalist id="m-name-list"></datalist>
           </label>
           <label class="field">
@@ -171,6 +171,41 @@
           <input type="date" id="m-list-date" class="compact-date">
         </div>
         <div id="meal-list" class="record-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== プライベート ===== -->
+    <section id="tab-private" class="tab-panel">
+      <div class="card status-card" id="private-status"></div>
+
+      <div class="card">
+        <button type="button" class="btn primary" id="p-quick">今日で記録</button>
+      </div>
+
+      <div class="card">
+        <div class="cal-header">
+          <button type="button" class="cal-nav" id="p-cal-prev" aria-label="前の月">‹</button>
+          <div class="cal-title" id="p-cal-title"></div>
+          <button type="button" class="cal-nav" id="p-cal-next" aria-label="次の月">›</button>
+        </div>
+        <div class="calendar" id="p-calendar"></div>
+        <div class="cal-detail" id="p-cal-detail"></div>
+      </div>
+
+      <details class="card form-card">
+        <summary>＋ 日付を指定して記録</summary>
+        <form id="private-form">
+          <label class="field">
+            <span>日時</span>
+            <input type="datetime-local" id="p-datetime" required>
+          </label>
+          <button type="submit" class="btn primary">保存</button>
+        </form>
+      </details>
+
+      <div class="card">
+        <h2>履歴</h2>
+        <div id="private-list" class="record-list"></div>
       </div>
     </section>
 
@@ -207,6 +242,15 @@
       </div>
 
       <div class="card">
+        <h2>プライベートタブ</h2>
+        <label class="toggle-row">
+          <input type="checkbox" id="s-show-private">
+          <span>プライベートタブ(🔒)を表示する</span>
+        </label>
+        <p class="note">この設定は端末ごとに保存され、他の端末には同期されません。</p>
+      </div>
+
+      <div class="card">
         <h2>自動バックアップ・端末間同期(GitHub Gist)</h2>
         <p class="note" id="s-backup-status"></p>
         <label class="field">
@@ -238,6 +282,7 @@
     <button class="nav-btn active" data-tab="workout"><span class="nav-icon">💪</span>筋トレ</button>
     <button class="nav-btn" data-tab="laser"><span class="nav-icon">✨</span>脱毛</button>
     <button class="nav-btn" data-tab="meal"><span class="nav-icon">🍗</span>食事</button>
+    <button class="nav-btn" data-tab="private" id="nav-private" hidden><span class="nav-icon">🔒</span>記録</button>
     <button class="nav-btn" data-tab="settings"><span class="nav-icon">⚙️</span>設定</button>
   </nav>
 

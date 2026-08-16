@@ -19,6 +19,7 @@ const store = {
 let workouts = store.load('workouts', []);   // {id, datetime, parts[], exercise, sets, reps, weight, memo}
 let lasers = store.load('lasers', []);       // {id, datetime, part}
 let meals = store.load('meals', []);         // {id, date, time, mealType, name, protein}
+let privates = store.load('privates', []);   // {id, datetime} プライベート記録(射精日)
 let tombstones = store.load('tombstones', {}); // {id: 削除日時} 端末間同期で削除を伝えるための履歴
 let syncing = false; // マージ保存中はscheduleBackupを抑止
 let settings = Object.assign(
@@ -194,7 +195,7 @@ function shiftMonth(cal, diff, render) {
 }
 
 /* ========== タブ切り替え ========== */
-const TAB_TITLES = { workout: '💪 筋トレ', laser: '✨ 脱毛', meal: '🍗 食事', settings: '⚙️ 設定' };
+const TAB_TITLES = { workout: '💪 筋トレ', laser: '✨ 脱毛', meal: '🍗 食事', private: '🔒 プライベート', settings: '⚙️ 設定' };
 document.querySelectorAll('.nav-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.nav-btn').forEach((b) => b.classList.toggle('active', b === btn));
@@ -593,9 +594,9 @@ function renderMeal() {
     <div class="progress"><div class="${total > goalMax ? 'over' : ''}" style="width:${pct}%"></div></div>
   `;
 
-  // 食品サジェスト(頻度順)
+  // 食品サジェスト(頻度順、名前ありの記録のみ)
   const freq = {};
-  meals.forEach((m) => { freq[m.name] = (freq[m.name] || 0) + 1; });
+  meals.forEach((m) => { if (m.name) freq[m.name] = (freq[m.name] || 0) + 1; });
   const names = Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
   $('#m-name-list').innerHTML = names.map((n) => `<option value="${n.replace(/"/g, '&quot;')}">`).join('');
 
@@ -668,8 +669,9 @@ function renderMeal() {
     g.textContent = `${type}  ${subtotal}g`;
     list.appendChild(g);
     group.forEach((m) => {
-      const detail = [m.time, `${m.protein}g`].filter(Boolean).join(' / ');
-      list.appendChild(recordItem(m.name, detail, [], () => {
+      const title = m.name || `${m.protein}g`;
+      const detail = m.name ? [m.time, `${m.protein}g`].filter(Boolean).join(' / ') : (m.time || '');
+      list.appendChild(recordItem(title, detail, [], () => {
         meals = meals.filter((x) => x.id !== m.id);
         markDeleted(m.id);
         store.save('meals', meals);
@@ -679,6 +681,104 @@ function renderMeal() {
   });
 }
 
+/* ========== プライベート記録 ========== */
+$('#p-datetime').value = toDatetimeLocal(new Date());
+
+const pCal = { y: nowDate.getFullYear(), m: nowDate.getMonth() };
+let pCalSelected = '';
+$('#p-cal-prev').addEventListener('click', () => shiftMonth(pCal, -1, renderPrivateCalendar));
+$('#p-cal-next').addEventListener('click', () => shiftMonth(pCal, 1, renderPrivateCalendar));
+
+$('#p-quick').addEventListener('click', () => {
+  privates.push({ id: uid(), datetime: toDatetimeLocal(new Date()) });
+  store.save('privates', privates);
+  toast('記録しました');
+  renderPrivate();
+});
+
+$('#private-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  privates.push({ id: uid(), datetime: $('#p-datetime').value });
+  store.save('privates', privates);
+  toast('記録しました');
+  renderPrivate();
+});
+
+function renderPrivateCalendar() {
+  renderCalendar(
+    $('#p-cal-title'), $('#p-calendar'), pCal,
+    (dateStr) => privates.some((p) => p.datetime.slice(0, 10) === dateStr) ? ['var(--accent)'] : [],
+    pCalSelected,
+    (dateStr) => {
+      pCalSelected = pCalSelected === dateStr ? '' : dateStr;
+      renderPrivateCalendar();
+    }
+  );
+  const detail = $('#p-cal-detail');
+  detail.innerHTML = '';
+  if (!pCalSelected) return;
+  const recs = privates
+    .filter((p) => p.datetime.slice(0, 10) === pCalSelected)
+    .sort((a, b) => a.datetime.localeCompare(b.datetime));
+  const head = document.createElement('div');
+  head.className = 'date-group';
+  head.textContent = `${fmtDate(pCalSelected)} の記録`;
+  detail.appendChild(head);
+  if (recs.length === 0) {
+    detail.insertAdjacentHTML('beforeend', '<div class="empty">記録がありません</div>');
+    return;
+  }
+  recs.forEach((p) => {
+    detail.appendChild(recordItem(fmtDatetime(p.datetime), '', [], () => {
+      privates = privates.filter((x) => x.id !== p.id);
+      markDeleted(p.id);
+      store.save('privates', privates);
+      renderPrivate();
+    }));
+  });
+}
+
+function renderPrivate() {
+  renderPrivateCalendar();
+  const status = $('#private-status');
+  if (privates.length === 0) {
+    status.innerHTML = '<div class="big">記録なし</div>';
+  } else {
+    const lastDate = privates.map((p) => p.datetime.slice(0, 10)).sort().at(-1);
+    const days = daysBetween(lastDate, today());
+    const label = days === 0 ? '今日記録済み' : `前回から ${days}日経過`;
+    status.innerHTML = `<div class="big">${label}</div><div class="sub">前回: ${fmtDate(lastDate)}</div>`;
+  }
+  const list = $('#private-list');
+  list.innerHTML = '';
+  const sorted = [...privates].sort((a, b) => b.datetime.localeCompare(a.datetime));
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="empty">記録がありません</div>';
+    return;
+  }
+  sorted.forEach((p) => {
+    list.appendChild(recordItem(fmtDatetime(p.datetime), '', [], () => {
+      privates = privates.filter((x) => x.id !== p.id);
+      markDeleted(p.id);
+      store.save('privates', privates);
+      renderPrivate();
+    }));
+  });
+}
+
+// タブの表示/非表示(この端末のみ・同期されない)
+function applyPrivateVisibility() {
+  $('#nav-private').hidden = !settings.showPrivate;
+  if (!settings.showPrivate && $('#tab-private').classList.contains('active')) {
+    document.querySelector('.nav-btn[data-tab="workout"]').click();
+  }
+}
+$('#s-show-private').addEventListener('change', (e) => {
+  settings.showPrivate = e.target.checked;
+  store.save('settings', settings);
+  applyPrivateVisibility();
+});
+
 /* ========== 自動バックアップ(GitHub Gist) ========== */
 const BACKUP_FILENAME = 'lifelog-backup.json';
 let backupTimer = null;
@@ -686,7 +786,7 @@ let backupTimer = null;
 function backupData() {
   // トークン等の秘匿情報はバックアップに含めない
   return {
-    workouts, lasers, meals, tombstones,
+    workouts, lasers, meals, privates, tombstones,
     settingsUpdatedAt: settings.settingsUpdatedAt || '',
     settings: {
       proteinGoalMin: settings.proteinGoalMin,
@@ -704,6 +804,7 @@ function canonical(data) {
     w: [...(data.workouts || [])].sort(byId),
     l: [...(data.lasers || [])].sort(byId),
     m: [...(data.meals || [])].sort(byId),
+    p: [...(data.privates || [])].sort(byId),
     t: Object.keys(data.tombstones || {}).sort(),
     s: data.settings || null,
     su: data.settingsUpdatedAt || '',
@@ -732,6 +833,7 @@ function applyMerge(remote) {
   workouts = mergeRecords(workouts, remote.workouts);
   lasers = mergeRecords(lasers, remote.lasers);
   meals = mergeRecords(meals, remote.meals);
+  privates = mergeRecords(privates, remote.privates);
   tombstones = allTomb;
   if (remote.settings && (remote.settingsUpdatedAt || '') > (settings.settingsUpdatedAt || '')) {
     Object.assign(settings, remote.settings);
@@ -742,6 +844,7 @@ function applyMerge(remote) {
     store.save('workouts', workouts);
     store.save('lasers', lasers);
     store.save('meals', meals);
+    store.save('privates', privates);
     store.save('tombstones', tombstones);
     store.save('settings', settings);
     syncing = false;
@@ -876,6 +979,7 @@ function renderSettings() {
   $('#s-laser-max').value = settings.laserMaxDays;
   $('#s-data-summary').textContent =
     `保存件数: 筋トレ ${workouts.length}件 / 脱毛 ${lasers.length}件 / 食事 ${meals.length}件`;
+  $('#s-show-private').checked = !!settings.showPrivate;
   renderBackupStatus();
 }
 
@@ -931,12 +1035,14 @@ $('#s-import-file').addEventListener('change', (e) => {
       workouts = data.workouts;
       lasers = data.lasers;
       meals = data.meals;
+      privates = data.privates || [];
       tombstones = data.tombstones || {};
       if (data.settings) {
         settings = Object.assign(settings, data.settings);
         settings.settingsUpdatedAt = new Date().toISOString();
       }
       store.save('tombstones', tombstones);
+      store.save('privates', privates);
       store.save('workouts', workouts);
       store.save('lasers', lasers);
       store.save('meals', meals);
@@ -956,9 +1062,11 @@ function renderAll() {
   renderWorkout();
   renderLaser();
   renderMeal();
+  renderPrivate();
   renderSettings();
 }
 renderAll();
+applyPrivateVisibility();
 scheduleBackup(); // 起動時に他端末の記録と同期(オフライン中の変更の追いつきも兼ねる)
 
 // PWAがバックグラウンドから復帰したときも同期
