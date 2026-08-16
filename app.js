@@ -95,7 +95,7 @@ function selectedChips(container) {
   return [...container.querySelectorAll('.chip.selected')].map((c) => c.dataset.part);
 }
 
-function recordItem(title, detail, badges, onDelete) {
+function recordItem(title, detail, badges, onDelete, onEdit) {
   const item = document.createElement('div');
   item.className = 'record-item';
   const body = document.createElement('div');
@@ -117,6 +117,14 @@ function recordItem(title, detail, badges, onDelete) {
     body.appendChild(dt);
   }
   item.appendChild(body);
+  if (onEdit) {
+    const edit = document.createElement('button');
+    edit.className = 'edit-btn';
+    edit.textContent = '✏️';
+    edit.setAttribute('aria-label', '編集');
+    edit.addEventListener('click', onEdit);
+    item.appendChild(edit);
+  }
   const del = document.createElement('button');
   del.className = 'del-btn';
   del.textContent = '🗑';
@@ -220,12 +228,42 @@ WORKOUT_PARTS.forEach((p) => {
   $('#w-filter-part').appendChild(opt);
 });
 
+let wEditing = null;
+
+function resetWorkoutForm() {
+  wEditing = null;
+  $('#w-datetime').value = toDatetimeLocal(new Date());
+  $('#w-exercise').value = '';
+  $('#w-sets').value = '';
+  $('#w-reps').value = '';
+  $('#w-weight').value = '';
+  $('#w-memo').value = '';
+  $('#w-submit').textContent = '保存';
+  $('#w-cancel').hidden = true;
+}
+
+function startEditWorkout(w) {
+  wEditing = w.id;
+  $('#workout-form-details').open = true;
+  $('#w-datetime').value = w.datetime;
+  $('#w-parts').querySelectorAll('.chip').forEach((c) => c.classList.toggle('selected', w.parts.includes(c.dataset.part)));
+  $('#w-exercise').value = w.exercise;
+  $('#w-sets').value = w.sets != null ? w.sets : '';
+  $('#w-reps').value = w.reps != null ? w.reps : '';
+  $('#w-weight').value = w.weight != null ? w.weight : '';
+  $('#w-memo').value = w.memo || '';
+  $('#w-submit').textContent = '更新';
+  $('#w-cancel').hidden = false;
+  $('#workout-form-details').scrollIntoView({ behavior: 'smooth' });
+}
+
+$('#w-cancel').addEventListener('click', resetWorkoutForm);
+
 $('#workout-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const parts = selectedChips($('#w-parts'));
   if (parts.length === 0) { toast('部位を選択してください'); return; }
-  workouts.push({
-    id: uid(),
+  const fields = {
     datetime: $('#w-datetime').value,
     parts,
     exercise: $('#w-exercise').value.trim(),
@@ -233,14 +271,18 @@ $('#workout-form').addEventListener('submit', (e) => {
     reps: $('#w-reps').value ? Number($('#w-reps').value) : null,
     weight: $('#w-weight').value ? Number($('#w-weight').value) : null,
     memo: $('#w-memo').value.trim(),
-  });
+    updatedAt: new Date().toISOString(),
+  };
+  if (wEditing) {
+    const rec = workouts.find((x) => x.id === wEditing);
+    if (rec) Object.assign(rec, fields);
+    toast('更新しました');
+  } else {
+    workouts.push(Object.assign({ id: uid() }, fields));
+    toast('筋トレを記録しました');
+  }
   store.save('workouts', workouts);
-  $('#w-exercise').value = '';
-  $('#w-sets').value = '';
-  $('#w-reps').value = '';
-  $('#w-weight').value = '';
-  $('#w-memo').value = '';
-  toast('筋トレを記録しました');
+  resetWorkoutForm();
   renderWorkout();
 });
 
@@ -311,7 +353,7 @@ function renderWorkoutCalendar() {
       markDeleted(w.id);
       store.save('workouts', workouts);
       renderWorkout();
-    }));
+    }, () => startEditWorkout(w)));
   });
 }
 
@@ -377,7 +419,7 @@ function renderWorkout() {
       markDeleted(w.id);
       store.save('workouts', workouts);
       renderWorkout();
-    }));
+    }, () => startEditWorkout(w)));
   });
 }
 
@@ -385,13 +427,41 @@ function renderWorkout() {
 buildChips($('#l-parts'), LASER_PARTS, true);
 $('#l-datetime').value = toDatetimeLocal(new Date());
 
+let lEditing = null;
+
+function resetLaserForm() {
+  lEditing = null;
+  $('#l-datetime').value = toDatetimeLocal(new Date());
+  $('#l-submit').textContent = '保存';
+  $('#l-cancel').hidden = true;
+}
+
+function startEditLaser(l) {
+  lEditing = l.id;
+  $('#laser-form-details').open = true;
+  $('#l-datetime').value = l.datetime;
+  $('#l-parts').querySelectorAll('.chip').forEach((c) => c.classList.toggle('selected', c.dataset.part === l.part));
+  $('#l-submit').textContent = '更新';
+  $('#l-cancel').hidden = false;
+  $('#laser-form-details').scrollIntoView({ behavior: 'smooth' });
+}
+
+$('#l-cancel').addEventListener('click', resetLaserForm);
+
 $('#laser-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const part = selectedChips($('#l-parts'))[0];
   if (!part) { toast('部位を選択してください'); return; }
-  lasers.push({ id: uid(), datetime: $('#l-datetime').value, part });
+  if (lEditing) {
+    const rec = lasers.find((x) => x.id === lEditing);
+    if (rec) Object.assign(rec, { datetime: $('#l-datetime').value, part, updatedAt: new Date().toISOString() });
+    toast('更新しました');
+  } else {
+    lasers.push({ id: uid(), datetime: $('#l-datetime').value, part, updatedAt: new Date().toISOString() });
+    toast(`${part}を記録しました`);
+  }
   store.save('lasers', lasers);
-  toast(`${part}を記録しました`);
+  resetLaserForm();
   renderLaser();
 });
 
@@ -433,7 +503,7 @@ function renderLaserCalendar() {
       markDeleted(l.id);
       store.save('lasers', lasers);
       renderLaser();
-    }));
+    }, () => startEditLaser(l)));
   });
 }
 
@@ -487,7 +557,7 @@ function renderLaser() {
     quick.className = 'laser-quick';
     quick.textContent = '今日で記録';
     quick.addEventListener('click', () => {
-      lasers.push({ id: uid(), datetime: toDatetimeLocal(new Date()), part });
+      lasers.push({ id: uid(), datetime: toDatetimeLocal(new Date()), part, updatedAt: new Date().toISOString() });
       store.save('lasers', lasers);
       toast(`${part}を今日の日付で記録しました`);
       renderLaser();
@@ -510,7 +580,7 @@ function renderLaser() {
       markDeleted(l.id);
       store.save('lasers', lasers);
       renderLaser();
-    }));
+    }, () => startEditLaser(l)));
   });
 }
 
@@ -535,22 +605,53 @@ function defaultMealType(hour) {
   });
 }
 
+let mEditing = null;
+
+function resetMealForm() {
+  mEditing = null;
+  $('#m-name').value = '';
+  $('#m-protein').value = '';
+  $('#m-submit').textContent = '保存';
+  $('#m-cancel').hidden = true;
+}
+
+function startEditMeal(m) {
+  mEditing = m.id;
+  $('#meal-form-details').open = true;
+  $('#m-date').value = m.date;
+  $('#m-time').value = m.time || '';
+  $('#m-types').querySelectorAll('.chip').forEach((c) => c.classList.toggle('selected', c.dataset.part === (m.mealType || '')));
+  $('#m-name').value = m.name || '';
+  $('#m-protein').value = m.protein;
+  $('#m-submit').textContent = '更新';
+  $('#m-cancel').hidden = false;
+  $('#meal-form-details').scrollIntoView({ behavior: 'smooth' });
+}
+
+$('#m-cancel').addEventListener('click', resetMealForm);
+
 $('#meal-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const mealType = selectedChips($('#m-types'))[0];
   if (!mealType) { toast('分類を選択してください'); return; }
-  meals.push({
-    id: uid(),
+  const fields = {
     date: $('#m-date').value,
     time: $('#m-time').value || '',
     mealType,
     name: $('#m-name').value.trim(),
     protein: Number($('#m-protein').value),
-  });
+    updatedAt: new Date().toISOString(),
+  };
+  if (mEditing) {
+    const rec = meals.find((x) => x.id === mEditing);
+    if (rec) Object.assign(rec, fields);
+    toast('更新しました');
+  } else {
+    meals.push(Object.assign({ id: uid() }, fields));
+    toast('食事を記録しました');
+  }
   store.save('meals', meals);
-  $('#m-name').value = '';
-  $('#m-protein').value = '';
-  toast('食事を記録しました');
+  resetMealForm();
   renderMeal();
 });
 
@@ -678,7 +779,7 @@ function renderMeal() {
         markDeleted(m.id);
         store.save('meals', meals);
         renderMeal();
-      }));
+      }, () => startEditMeal(m)));
     });
   });
 }
@@ -692,17 +793,44 @@ $('#p-cal-prev').addEventListener('click', () => shiftMonth(pCal, -1, renderPriv
 $('#p-cal-next').addEventListener('click', () => shiftMonth(pCal, 1, renderPrivateCalendar));
 
 $('#p-quick').addEventListener('click', () => {
-  privates.push({ id: uid(), datetime: toDatetimeLocal(new Date()) });
+  privates.push({ id: uid(), datetime: toDatetimeLocal(new Date()), updatedAt: new Date().toISOString() });
   store.save('privates', privates);
   toast('記録しました');
   renderPrivate();
 });
 
+let pEditing = null;
+
+function resetPrivateForm() {
+  pEditing = null;
+  $('#p-datetime').value = toDatetimeLocal(new Date());
+  $('#p-submit').textContent = '保存';
+  $('#p-cancel').hidden = true;
+}
+
+function startEditPrivate(p) {
+  pEditing = p.id;
+  $('#private-form-details').open = true;
+  $('#p-datetime').value = p.datetime;
+  $('#p-submit').textContent = '更新';
+  $('#p-cancel').hidden = false;
+  $('#private-form-details').scrollIntoView({ behavior: 'smooth' });
+}
+
+$('#p-cancel').addEventListener('click', resetPrivateForm);
+
 $('#private-form').addEventListener('submit', (e) => {
   e.preventDefault();
-  privates.push({ id: uid(), datetime: $('#p-datetime').value });
+  if (pEditing) {
+    const rec = privates.find((x) => x.id === pEditing);
+    if (rec) Object.assign(rec, { datetime: $('#p-datetime').value, updatedAt: new Date().toISOString() });
+    toast('更新しました');
+  } else {
+    privates.push({ id: uid(), datetime: $('#p-datetime').value, updatedAt: new Date().toISOString() });
+    toast('記録しました');
+  }
   store.save('privates', privates);
-  toast('記録しました');
+  resetPrivateForm();
   renderPrivate();
 });
 
@@ -736,7 +864,7 @@ function renderPrivateCalendar() {
       markDeleted(p.id);
       store.save('privates', privates);
       renderPrivate();
-    }));
+    }, () => startEditPrivate(p)));
   });
 }
 
@@ -764,7 +892,7 @@ function renderPrivate() {
       markDeleted(p.id);
       store.save('privates', privates);
       renderPrivate();
-    }));
+    }, () => startEditPrivate(p)));
   });
 }
 
@@ -829,7 +957,11 @@ function applyMerge(remote) {
   const mergeRecords = (local, remoteList) => {
     const m = new Map();
     (remoteList || []).forEach((r) => { if (r && r.id) m.set(r.id, r); });
-    local.forEach((r) => m.set(r.id, r));
+    local.forEach((r) => {
+      const existing = m.get(r.id);
+      // 同じIDは編集日時(updatedAt)が新しい方を採用。同時・不明ならローカル優先
+      if (!existing || (r.updatedAt || '') >= (existing.updatedAt || '')) m.set(r.id, r);
+    });
     return [...m.values()].filter((r) => !allTomb[r.id]);
   };
   workouts = mergeRecords(workouts, remote.workouts);

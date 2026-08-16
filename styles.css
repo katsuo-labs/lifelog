@@ -209,13 +209,17 @@ input.compact-date { width: auto; padding: 6px 8px; font-size: 0.82rem; }
   margin-right: 4px;
   font-weight: 600;
 }
-.del-btn {
+.del-btn, .edit-btn {
   border: none;
   background: none;
   color: var(--text-sub);
   font-size: 1rem;
   cursor: pointer;
   padding: 4px 6px;
+}
+.cancel-btn {
+  width: 100%;
+  margin-top: 8px;
 }
 .empty { color: var(--text-sub); font-size: 0.85rem; text-align: center; padding: 12px 0; }
 

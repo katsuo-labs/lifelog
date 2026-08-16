@@ -73,7 +73,8 @@
             <span>メモ</span>
             <input type="text" id="w-memo" placeholder="任意">
           </label>
-          <button type="submit" class="btn primary">保存</button>
+          <button type="submit" class="btn primary" id="w-submit">保存</button>
+          <button type="button" class="btn cancel-btn" id="w-cancel" hidden>編集をキャンセル</button>
         </form>
       </details>
 
@@ -115,7 +116,8 @@
             <span>部位</span>
             <div class="chip-group single" id="l-parts"></div>
           </div>
-          <button type="submit" class="btn primary">保存</button>
+          <button type="submit" class="btn primary" id="l-submit">保存</button>
+          <button type="button" class="btn cancel-btn" id="l-cancel" hidden>編集をキャンセル</button>
         </form>
       </details>
 
@@ -129,7 +131,7 @@
     <section id="tab-meal" class="tab-panel">
       <div class="card status-card" id="meal-status"></div>
 
-      <details class="card form-card" open>
+      <details class="card form-card" id="meal-form-details" open>
         <summary>＋ 記録を追加</summary>
         <form id="meal-form">
           <div class="field-row">
@@ -156,7 +158,8 @@
             <input type="number" id="m-protein" min="0" step="0.1" inputmode="decimal" placeholder="20" required>
           </label>
           <div class="quick-foods" id="m-quick-foods"></div>
-          <button type="submit" class="btn primary">保存</button>
+          <button type="submit" class="btn primary" id="m-submit">保存</button>
+          <button type="button" class="btn cancel-btn" id="m-cancel" hidden>編集をキャンセル</button>
         </form>
       </details>
 
@@ -192,14 +195,15 @@
         <div class="cal-detail" id="p-cal-detail"></div>
       </div>
 
-      <details class="card form-card">
+      <details class="card form-card" id="private-form-details">
         <summary>＋ 日付を指定して記録</summary>
         <form id="private-form">
           <label class="field">
             <span>日時</span>
             <input type="datetime-local" id="p-datetime" required>
           </label>
-          <button type="submit" class="btn primary">保存</button>
+          <button type="submit" class="btn primary" id="p-submit">保存</button>
+          <button type="button" class="btn cancel-btn" id="p-cancel" hidden>編集をキャンセル</button>
         </form>
       </details>
 
