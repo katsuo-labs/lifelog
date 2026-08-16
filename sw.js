@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lifelog-v5';
+const CACHE_NAME = 'lifelog-v6';
 const ASSETS = [
   './',
   './index.html',

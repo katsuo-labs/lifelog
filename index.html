@@ -28,6 +28,17 @@
     <section id="tab-workout" class="tab-panel active">
       <div class="card status-card" id="workout-status"></div>
 
+      <div class="card">
+        <div class="cal-header">
+          <button type="button" class="cal-nav" id="w-cal-prev" aria-label="前の月">‹</button>
+          <div class="cal-title" id="w-cal-title"></div>
+          <button type="button" class="cal-nav" id="w-cal-next" aria-label="次の月">›</button>
+        </div>
+        <div class="calendar" id="w-calendar"></div>
+        <div class="cal-legend" id="w-cal-legend"></div>
+        <div class="cal-detail" id="w-cal-detail"></div>
+      </div>
+
       <details class="card form-card" id="workout-form-details" open>
         <summary>＋ 記録を追加</summary>
         <form id="workout-form">
@@ -81,6 +92,17 @@
     <!-- ===== 脱毛 ===== -->
     <section id="tab-laser" class="tab-panel">
       <div id="laser-cards" class="laser-cards"></div>
+
+      <div class="card">
+        <div class="cal-header">
+          <button type="button" class="cal-nav" id="l-cal-prev" aria-label="前の月">‹</button>
+          <div class="cal-title" id="l-cal-title"></div>
+          <button type="button" class="cal-nav" id="l-cal-next" aria-label="次の月">›</button>
+        </div>
+        <div class="calendar" id="l-calendar"></div>
+        <div class="cal-legend" id="l-cal-legend"></div>
+        <div class="cal-detail" id="l-cal-detail"></div>
+      </div>
 
       <details class="card form-card" id="laser-form-details">
         <summary>＋ 日付を指定して記録</summary>

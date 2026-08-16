@@ -32,6 +32,8 @@ let settings = Object.assign(
 const WORKOUT_PARTS = ['胸', '背中', '脚', '肩', '腕', '腹'];
 const LASER_PARTS = ['腕', '左足', '右足'];
 const MEAL_TYPES = ['朝食', '昼食', '夕食', '間食'];
+const PART_COLORS = { '胸': '#ef4444', '背中': '#3b82f6', '脚': '#f59e0b', '肩': '#8b5cf6', '腕': '#10b981', '腹': '#ec4899' };
+const LASER_COLORS = { '腕': '#10b981', '左足': '#3b82f6', '右足': '#f59e0b' };
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const $ = (sel) => document.querySelector(sel);
@@ -125,6 +127,72 @@ function recordItem(title, detail, badges, onDelete) {
   return item;
 }
 
+/* ========== カレンダー ========== */
+function buildLegend(container, colors) {
+  container.innerHTML = '';
+  Object.entries(colors).forEach(([name, color]) => {
+    const item = document.createElement('span');
+    item.className = 'legend-item';
+    const dot = document.createElement('span');
+    dot.className = 'cal-dot';
+    dot.style.background = color;
+    item.appendChild(dot);
+    item.appendChild(document.createTextNode(name));
+    container.appendChild(item);
+  });
+}
+
+// marksFor(dateStr) が返す色の配列をドットとして日付セルに描画する
+function renderCalendar(titleEl, gridEl, cal, marksFor, selected, onSelect) {
+  titleEl.textContent = `${cal.y}年${cal.m + 1}月`;
+  gridEl.innerHTML = '';
+  ['日', '月', '火', '水', '木', '金', '土'].forEach((d) => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    gridEl.appendChild(el);
+  });
+  const firstDow = new Date(cal.y, cal.m, 1).getDay();
+  const daysInMonth = new Date(cal.y, cal.m + 1, 0).getDate();
+  for (let i = 0; i < firstDow; i++) gridEl.appendChild(document.createElement('div'));
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${cal.y}-${pad(cal.m + 1)}-${pad(d)}`;
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cal-day';
+    if (dateStr === today()) cell.classList.add('today');
+    if (dateStr === selected) cell.classList.add('selected');
+    const num = document.createElement('div');
+    num.className = 'cal-num';
+    num.textContent = d;
+    cell.appendChild(num);
+    const dots = document.createElement('div');
+    dots.className = 'cal-dots';
+    marksFor(dateStr).slice(0, 4).forEach((color) => {
+      const s = document.createElement('span');
+      s.className = 'cal-dot';
+      s.style.background = color;
+      dots.appendChild(s);
+    });
+    cell.appendChild(dots);
+    cell.addEventListener('click', () => onSelect(dateStr));
+    gridEl.appendChild(cell);
+  }
+}
+
+const nowDate = new Date();
+const wCal = { y: nowDate.getFullYear(), m: nowDate.getMonth() };
+const lCal = { y: nowDate.getFullYear(), m: nowDate.getMonth() };
+let wCalSelected = '';
+let lCalSelected = '';
+
+function shiftMonth(cal, diff, render) {
+  cal.m += diff;
+  if (cal.m < 0) { cal.m = 11; cal.y--; }
+  if (cal.m > 11) { cal.m = 0; cal.y++; }
+  render();
+}
+
 /* ========== タブ切り替え ========== */
 const TAB_TITLES = { workout: '💪 筋トレ', laser: '✨ 脱毛', meal: '🍗 食事', settings: '⚙️ 設定' };
 document.querySelectorAll('.nav-btn').forEach((btn) => {
@@ -193,7 +261,59 @@ $('#w-exercise').addEventListener('change', () => {
 $('#w-filter-part').addEventListener('change', renderWorkout);
 $('#w-filter-month').addEventListener('change', renderWorkout);
 
+buildLegend($('#w-cal-legend'), PART_COLORS);
+$('#w-cal-prev').addEventListener('click', () => shiftMonth(wCal, -1, renderWorkoutCalendar));
+$('#w-cal-next').addEventListener('click', () => shiftMonth(wCal, 1, renderWorkoutCalendar));
+
+function renderWorkoutCalendar() {
+  renderCalendar(
+    $('#w-cal-title'), $('#w-calendar'), wCal,
+    (dateStr) => {
+      const parts = new Set();
+      workouts.forEach((w) => { if (w.datetime.slice(0, 10) === dateStr) w.parts.forEach((p) => parts.add(p)); });
+      return WORKOUT_PARTS.filter((p) => parts.has(p)).map((p) => PART_COLORS[p]);
+    },
+    wCalSelected,
+    (dateStr) => {
+      wCalSelected = wCalSelected === dateStr ? '' : dateStr;
+      renderWorkoutCalendar();
+    }
+  );
+  const detail = $('#w-cal-detail');
+  detail.innerHTML = '';
+  if (!wCalSelected) return;
+  const recs = workouts
+    .filter((w) => w.datetime.slice(0, 10) === wCalSelected)
+    .sort((a, b) => a.datetime.localeCompare(b.datetime));
+  const head = document.createElement('div');
+  head.className = 'date-group';
+  head.textContent = `${fmtDate(wCalSelected)} の記録`;
+  detail.appendChild(head);
+  if (recs.length === 0) {
+    detail.insertAdjacentHTML('beforeend', '<div class="empty">記録がありません</div>');
+    return;
+  }
+  recs.forEach((w) => {
+    const parts = [];
+    if (w.sets != null || w.reps != null || w.weight != null) {
+      parts.push([
+        w.sets != null ? `${w.sets}セット` : '',
+        w.reps != null ? `${w.reps}回` : '',
+        w.weight != null ? `${w.weight}kg` : '',
+      ].filter(Boolean).join(' × '));
+    }
+    if (w.memo) parts.push(w.memo);
+    detail.appendChild(recordItem(w.exercise, parts.join(' / '), w.parts, () => {
+      workouts = workouts.filter((x) => x.id !== w.id);
+      markDeleted(w.id);
+      store.save('workouts', workouts);
+      renderWorkout();
+    }));
+  });
+}
+
 function renderWorkout() {
+  renderWorkoutCalendar();
   // ステータス: 最終トレーニング日からの経過日数
   const status = $('#workout-status');
   if (workouts.length === 0) {
@@ -272,7 +392,50 @@ $('#laser-form').addEventListener('submit', (e) => {
   renderLaser();
 });
 
+buildLegend($('#l-cal-legend'), LASER_COLORS);
+$('#l-cal-prev').addEventListener('click', () => shiftMonth(lCal, -1, renderLaserCalendar));
+$('#l-cal-next').addEventListener('click', () => shiftMonth(lCal, 1, renderLaserCalendar));
+
+function renderLaserCalendar() {
+  renderCalendar(
+    $('#l-cal-title'), $('#l-calendar'), lCal,
+    (dateStr) => {
+      const parts = new Set();
+      lasers.forEach((l) => { if (l.datetime.slice(0, 10) === dateStr) parts.add(l.part); });
+      return LASER_PARTS.filter((p) => parts.has(p)).map((p) => LASER_COLORS[p]);
+    },
+    lCalSelected,
+    (dateStr) => {
+      lCalSelected = lCalSelected === dateStr ? '' : dateStr;
+      renderLaserCalendar();
+    }
+  );
+  const detail = $('#l-cal-detail');
+  detail.innerHTML = '';
+  if (!lCalSelected) return;
+  const recs = lasers
+    .filter((l) => l.datetime.slice(0, 10) === lCalSelected)
+    .sort((a, b) => a.datetime.localeCompare(b.datetime));
+  const head = document.createElement('div');
+  head.className = 'date-group';
+  head.textContent = `${fmtDate(lCalSelected)} の記録`;
+  detail.appendChild(head);
+  if (recs.length === 0) {
+    detail.insertAdjacentHTML('beforeend', '<div class="empty">記録がありません</div>');
+    return;
+  }
+  recs.forEach((l) => {
+    detail.appendChild(recordItem(fmtDatetime(l.datetime), '', [l.part], () => {
+      lasers = lasers.filter((x) => x.id !== l.id);
+      markDeleted(l.id);
+      store.save('lasers', lasers);
+      renderLaser();
+    }));
+  });
+}
+
 function renderLaser() {
+  renderLaserCalendar();
   const cards = $('#laser-cards');
   cards.innerHTML = '';
   const min = settings.laserMinDays;
