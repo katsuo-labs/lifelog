@@ -19,7 +19,7 @@ const store = {
 let workouts = store.load('workouts', []);   // {id, datetime, parts[], exercise, sets, reps, weight, memo}
 let lasers = store.load('lasers', []);       // {id, datetime, part}
 let meals = store.load('meals', []);         // {id, date, time, mealType, name, protein}
-let privates = store.load('privates', []);   // {id, datetime} プライベート記録(射精日)
+let privates = store.load('privates', []);   // {id, datetime} プライベート記録
 let tombstones = store.load('tombstones', {}); // {id: 削除日時} 端末間同期で削除を伝えるための履歴
 let syncing = false; // マージ保存中はscheduleBackupを抑止
 let settings = Object.assign(
@@ -203,6 +203,8 @@ document.querySelectorAll('.nav-btn').forEach((btn) => {
     $('#tab-' + btn.dataset.tab).classList.add('active');
     $('#header-title').textContent = TAB_TITLES[btn.dataset.tab];
     if (btn.dataset.tab === 'settings') renderSettings();
+    settings.lastTab = btn.dataset.tab; // 次回起動時に同じタブを開く(端末ローカル)
+    store.save('settings', settings);
     window.scrollTo(0, 0);
   });
 });
@@ -1067,6 +1069,12 @@ function renderAll() {
 }
 renderAll();
 applyPrivateVisibility();
+
+// 前回開いていたタブを復元
+if (settings.lastTab && settings.lastTab !== 'workout') {
+  const lastBtn = document.querySelector(`.nav-btn[data-tab="${settings.lastTab}"]`);
+  if (lastBtn && !lastBtn.hidden) lastBtn.click();
+}
 scheduleBackup(); // 起動時に他端末の記録と同期(オフライン中の変更の追いつきも兼ねる)
 
 // PWAがバックグラウンドから復帰したときも同期
